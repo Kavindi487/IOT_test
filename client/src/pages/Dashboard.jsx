@@ -4,6 +4,8 @@ import SensorCard from "../components/SensorCard";
 import SensorChart from "../components/SensorChart";
 
 
+const BACKEND_URL = "https://perfect-wholeness-production-2240.up.railway.app";
+
 export default function Dashboard() {
 const [latest, setLatest] = useState(null);
 const [history, setHistory] = useState([]);
@@ -12,7 +14,7 @@ const [history, setHistory] = useState([]);
 useEffect(() => {
 const fetchData = async () => {
 try {
-const res = await axios.get("http://localhost:8080/api/readings/latest");
+const res = await axios.get(`${BACKEND_URL}/api/readings/latest`);
 setLatest(res.data || null);
 } catch (err) {
 console.error("Error fetching latest:", err.message);
@@ -21,7 +23,7 @@ setLatest(null);
 
 
 try {
-const resHistory = await axios.get("http://localhost:8080/api/sensordata");
+const resHistory = await axios.get(`${BACKEND_URL}/api/sensordata`);
 setHistory(Array.isArray(resHistory.data) ? resHistory.data : []);
 } catch (err) {
 console.error("Error fetching history:", err.message);
