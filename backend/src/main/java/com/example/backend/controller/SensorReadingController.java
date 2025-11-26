@@ -1,62 +1,113 @@
 package com.example.backend.controller;
 
-
 import com.example.backend.model.SensorReading;
 import com.example.backend.service.SensorReadingService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = {"http://localhost:3000", "http://172.30.21.47:3000", "*"})
 public class SensorReadingController {
 
-
     private final SensorReadingService service;
-
 
     public SensorReadingController(SensorReadingService service) {
         this.service = service;
     }
 
-
-    // Keep existing POST endpoint
     @PostMapping("/sensordata")
-    public ResponseEntity<String> receive(@RequestBody SensorReading reading) {
-// Ensure receivedAt is set if not provided
-        if (reading.getReceivedAt() == null) {
-            reading.setReceivedAt(java.time.Instant.now());
+    public ResponseEntity<?> receive(@RequestBody SensorReading reading) {
+        try {
+            // Log incoming data
+            System.out.println("========================================");
+            System.out.println("📥 Received sensor data:");
+            System.out.println("Room Temp: " + reading.getRoomTemp());
+            System.out.println("Humidity: " + reading.getHumidity());
+            System.out.println("Water Temp C: " + reading.getWaterTempC());
+            System.out.println("Water Temp F: " + reading.getWaterTempF());
+            System.out.println("IR Value: " + reading.getIrValue());
+            System.out.println("BPM: " + reading.getBpm());
+            System.out.println("Avg BPM: " + reading.getAvgBpm());
+
+            // Ensure receivedAt is set
+            if (reading.getReceivedAt() == null) {
+                reading.setReceivedAt(java.time.Instant.now());
+            }
+
+            // Save to database
+            SensorReading saved = service.save(reading);
+
+            System.out.println("✅ Successfully saved with ID: " + saved.getId());
+            System.out.println("Total records in DB: " + service.count());
+            System.out.println("========================================");
+
+            // Return success response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Data received successfully");
+            response.put("id", saved.getId());
+            response.put("timestamp", saved.getReceivedAt());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("❌ ERROR saving sensor data:");
+            System.err.println("Error message: " + e.getMessage());
+            System.err.println("Error class: " + e.getClass().getName());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", e.getMessage());
+            errorResponse.put("errorType", e.getClass().getSimpleName());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-
-
-        SensorReading saved = service.save(reading);
-
-
-// debug log
-        System.out.println("Received sensor reading: " + saved);
-        System.out.println("Total saved rows: " + service.count());
-
-
-        return ResponseEntity.ok("Data received");
     }
 
-
-    // Return all readings
     @GetMapping("/sensordata")
     public ResponseEntity<List<SensorReading>> allReadings() {
-        return ResponseEntity.ok(service.findAll());
+        try {
+            List<SensorReading> readings = service.findAll();
+            System.out.println("📤 Returning " + readings.size() + " readings");
+            return ResponseEntity.ok(readings);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR fetching all readings: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
-
-    // New endpoint used by frontend to get the latest reading
     @GetMapping("/readings/latest")
     public ResponseEntity<SensorReading> latest() {
-        SensorReading latest = service.findLatest();
-        if (latest == null) return ResponseEntity.noContent().build();
-        return ResponseEntity.ok(latest);
+        try {
+            SensorReading latest = service.findLatest();
+            if (latest == null) {
+                System.out.println("⚠️ No readings found in database");
+                return ResponseEntity.noContent().build();
+            }
+            System.out.println("📤 Returning latest reading ID: " + latest.getId());
+            return ResponseEntity.ok(latest);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR fetching latest reading: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // Health check endpoint
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, Object>> health() {
+        Map<String, Object> health = new HashMap<>();
+        health.put("status", "UP");
+        health.put("timestamp", java.time.Instant.now());
+        health.put("totalReadings", service.count());
+        return ResponseEntity.ok(health);
     }
 }
