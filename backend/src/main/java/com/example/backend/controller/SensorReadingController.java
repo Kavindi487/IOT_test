@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.model.SensorReading;
 import com.example.backend.service.SensorReadingService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,19 +13,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = {"http://localhost:3000", "http://172.30.21.47:3000", "*"})
+@CrossOrigin(origins = "*")
 public class SensorReadingController {
 
-    private final SensorReadingService service;
-
-    public SensorReadingController(SensorReadingService service) {
-        this.service = service;
-    }
+    @Autowired
+    private SensorReadingService service;
 
     @PostMapping("/sensordata")
     public ResponseEntity<?> receive(@RequestBody SensorReading reading) {
         try {
-            // Log incoming data
             System.out.println("========================================");
             System.out.println("📥 Received sensor data:");
             System.out.println("Room Temp: " + reading.getRoomTemp());
@@ -35,19 +32,16 @@ public class SensorReadingController {
             System.out.println("BPM: " + reading.getBpm());
             System.out.println("Avg BPM: " + reading.getAvgBpm());
 
-            // Ensure receivedAt is set
             if (reading.getReceivedAt() == null) {
                 reading.setReceivedAt(java.time.Instant.now());
             }
 
-            // Save to database
             SensorReading saved = service.save(reading);
 
             System.out.println("✅ Successfully saved with ID: " + saved.getId());
             System.out.println("Total records in DB: " + service.count());
             System.out.println("========================================");
 
-            // Return success response
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Data received successfully");
@@ -101,13 +95,16 @@ public class SensorReadingController {
         }
     }
 
-    // Health check endpoint
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> health() {
         Map<String, Object> health = new HashMap<>();
         health.put("status", "UP");
         health.put("timestamp", java.time.Instant.now());
-        health.put("totalReadings", service.count());
+        try {
+            health.put("totalReadings", service.count());
+        } catch (Exception e) {
+            health.put("error", e.getMessage());
+        }
         return ResponseEntity.ok(health);
     }
 }

@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SensorReadingRepository extends JpaRepository<SensorReading, Long> {
+    // Spring Data JPA automatically implements this
 }

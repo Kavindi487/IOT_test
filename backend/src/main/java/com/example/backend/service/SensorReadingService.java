@@ -2,6 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.model.SensorReading;
 import com.example.backend.repository.SensorReadingRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -10,11 +11,8 @@ import java.util.List;
 @Service
 public class SensorReadingService {
 
-    private final SensorReadingRepository repository;
-
-    public SensorReadingService(SensorReadingRepository repository) {
-        this.repository = repository;
-    }
+    @Autowired
+    private SensorReadingRepository repository;
 
     public SensorReading save(SensorReading reading) {
         if (reading.getReceivedAt() == null) {

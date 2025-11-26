@@ -11,7 +11,6 @@ public class SensorReading {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // IMPORTANT: Allow nulls for all sensor fields
     @Column(nullable = true)
     private Double roomTemp;
 
